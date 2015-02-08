@@ -1,5 +1,6 @@
 import numpy as np
-import csv
+# import csv
+from matplotlib import pyplot as plt
 
 # import data
 	#filter by ground truth and noisy data
@@ -87,8 +88,14 @@ import csv
 # 			val += i
 # 	print truthData
 
-def getData():
-	pass
+def getData(directory):
+	data = np.loadtxt(directory)
+	return data
+
+def parseData(data):
+	pos = data[:,0:2]
+	meas = data[:,2:4]
+	return pos, meas
 
 
 	# results = []
@@ -98,12 +105,18 @@ def getData():
 	# # print results
 	pass
 
-truthData = np.matrix([[20,20],[30,30],[40,40],[50,50],[60,60]])
-measData = np.matrix([[30.6599, 40.6570],[8.9595, 37.2423],[39.1632,15.4473],[44.4980,46.7913],[38.3285,20.9157]])
+# MINI SAMPLE OF THE HW DATA
+# truthData = np.matrix([[20,20],[30,30],[40,40],[50,50],[60,60]])
+# measData = np.matrix([[30.6599, 40.6570],[8.9595, 37.2423],[39.1632,15.4473],[44.4980,46.7913],[38.3285,20.9157]])
 
+# MINI EXAMPLE OF A BALL FALLING IN GRAVITY
+# measData = np.matrix([[100, 40.6570],[97.9, 37.2423],[94.4,15.4d473],[92.7,46.7913],[87.3,20.9157]])
 
-# measData = np.matrix([[100, 40.6570],[97.9, 37.2423],[94.4,15.4473],[92.7,46.7913],[87.3,20.9157]])
-
+directory = 'mp2_data_fixed.dat'
+data = getData(directory)
+[truthData,measData] = parseData(data)
+# truthData = truthData[:,0]
+# measData = measData[:,0]
 
 #constants
 F = np.matrix([[1,1],[0,1]])  #constant accel
@@ -118,6 +131,8 @@ cov = np.matrix([[.1,.1],[.1,.1]])  #just a guess
 Q = np.matrix([[2,0],[0,2]])
 R = np.matrix([1])
 
+# count = 0
+# estimation = np.array([0])
 for i in range(len(measData)):
 
 	#state prediction
@@ -145,4 +160,16 @@ for i in range(len(measData)):
 	print 'cov = ',cov
 	print 'posEst = ',posEst
 	print ''
+	try:
+		estimation = np.vstack((estimation,posEst[0]))
+	except:
+		estimation = posEst[0]
 
+def plotData(truth,meas,est):
+	plt.plot(truth[:,0], label='truth')
+	plt.plot(meas[:,0], label='measurement')
+	plt.plot(est, label='estimate')
+	plt.legend()
+	plt.show()
+
+plotData(truthData,measData,estimation)
