@@ -48,60 +48,65 @@ def kalman():
 	# measData = measData[:,0]
 
 	#constants
-	F = np.matrix([[1,1],[0,1]])  #constant accel
-	G = np.matrix([0.5,1]) #constant accel
-	H = np.matrix([1,0]) #we're only measuring position
-	a = .10 #acceleration
+	F = np.matrix([[1,0,1,0],[0,1,0,1],[0,0,1,0],[0,0,0,1]])  #constant vel
+	# G = np.matrix([0.5,1]) #constant accel
+	# H = np.matrix([1,0]) #we're only measuring position
+	H = np.matrix([[1,0,0,0],[0,1,0,0]])
+	# a = .10 #acceleration
 
 	#initializers
-	posEst = np.transpose(np.matrix([20,10]))
+	posEst = np.transpose(np.matrix([20,20,10,10]))
 	# cov = np.zeros([2,2]) #initial estimate of the state covariance
-	cov = np.matrix([[1,1],[1,1]])  #just a guess
-	Q = np.matrix([[1,0],[0,1]])
-	R = np.matrix([1])
+	cov = np.identity(4)  #just a guess
+	Q = np.matrix([[5,0,0,0],[0,5,0,0],[0,0,5,0],[0,0,0,5]])
+	R = np.matrix([[100000,10],[10,100000]])
 
-	# count = 0
-	# estimation = np.array([0])
 	for i in range(len(measData)):
-
 		#state prediction
-		statePred = F*posEst+np.transpose(G)*a
+		statePred = F*posEst
+		statePredCov = F*cov*np.transpose(F)+Q
+
 		#measurement prediction
 		measPred = H*statePred
-
-		#measurement residual
-		try:
-			measRes = measData[i,0] - measPred
-		except:
-			break
-
-		#updated state estimate
-			#update state covariance estimation
-		statePredCov = F*cov*np.transpose(F)+Q
 		measPredCov = H*statePredCov*np.transpose(H)+R
+
+		#associate the data together
+		measurement = np.matrix(measData[i])
+		measurement = np.transpose(measurement)
+		innovation = measurement-measPred
+
+		# print "measData[i] is of shape", measData[i].shape
+
+		#update
 		gain = statePredCov*np.transpose(H)*np.linalg.inv(measPredCov)
-		cov = statePredCov - gain*measPredCov*(np.transpose(gain))
-		# cov = (np.identity(2)-gain*H)*statePredCov
-		posEst = statePred + gain*measRes
-		print 'statePred = ',statePred
-		print 'measPred = ',measPred
-		print 'measRes = ',measRes
-		print 'statePredCov = ',statePredCov
-		print 'measPredCov = ',measPredCov
-		print 'gain = ',gain
-		print 'cov = ',cov
-		print 'posEst = ',posEst
-		print ''
+		posEst = statePred+gain*innovation
+		cov = (np.identity(4)-gain*H)*statePredCov
+
+		# print statePred.shape
 		try:
-			estimation = np.vstack((estimation,posEst[0]))
+			estimation = np.vstack((estimation,np.transpose(posEst)))
 		except:
-			estimation = posEst[0]
-	plotData(truthData,measData,estimation)
+			estimation = np.transpose(posEst)
+
+	# print estimation
+	# print estimation.shape
+	# plotData(truthData,measData,estimation)
+	return truthData,measData,estimation
+
+
+
+
 
 def plotData(truth,meas,est):
-	plt.plot(truth[:,0], label='truth')
-	plt.plot(meas[:,0], label='measurement')
-	plt.plot(est, label='estimate')
+	plt.plot(truth[:,0],truth[:,1], label='truth')
+	plt.scatter(meas[:,0], meas[:,1], label='measurement')
+	plt.plot(est[:,0],est[:,1], label='estimate')
 	plt.legend()
+	plt.axis('equal')
+	plt.title('Kalman Filter Implementation')
+	plt.xlabel('x position')
+	plt.ylabel('y position')
 	plt.show()
 
+[truth,meas,est] = kalman()
+plotData(truth,meas,est)
